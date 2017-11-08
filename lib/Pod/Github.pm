@@ -110,7 +110,7 @@ sub end_Document {
             }
 
             if ($self->_should_exclude_section($heading)) {
-                $skip_until_level = 1;
+                $skip_until_level = $level;
             }
             elsif ($self->_should_inline_section($heading)) {
                 # Remove the header (first line), but keep the content
