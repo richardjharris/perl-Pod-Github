@@ -1,6 +1,8 @@
 package Pod::Github;
 use strict;
 use warnings;
+use Carp qw(croak);
+use Encode;
 use File::Slurp qw(read_file);
 use parent 'Pod::Markdown';
 
@@ -15,39 +17,32 @@ sub new {
     my $self = $class->SUPER::new();
     $self->{$DATA_KEY} = \%args;
 
-    # Convert 'HEADER,HEADER,...' CSV options to hashes for easy lookup
-    for my $config_key (qw(include exclude inline)) {
-        $self->{$DATA_KEY}{$config_key} = {
-            map { _trim($_) => 1 } split /,/, ($self->{$DATA_KEY}{$config_key} || '')
-        };
-    }
-
     return $self;
 }
 
 sub _should_exclude_section {
     my ($self, $heading) = @_;
-    my $conf = $self->{$DATA_KEY};
+    my @include = @{$self->{$DATA_KEY}{include} || []};
+    my @exclude = @{$self->{$DATA_KEY}{exclude} || []};
 
-    if (keys %{$conf->{include}} && !$conf->{include}{$heading}) {
-        return 1;
+    if (@include) {
+        return not grep { $_ eq $heading } @include; 
     }
-    elsif ($conf->{exclude}{$heading}) {
-        return 1;
+    else {
+        return grep { $_ eq $heading } @exclude;
     }
-
-    return 0;
 }
 
 sub _should_inline_section {
     my ($self, $heading) = @_;
-    my $conf = $self->{$DATA_KEY};
+    my @inline = @{$self->{$DATA_KEY}{inline} || []};
 
-    return $conf->{inline}{$heading} || 0;
+    return grep { $_ eq $heading } @inline;
 }
 
-# Output markdown content $name if configured via the '$name' or '${name}_file' options
-# XXX we assume UTF-8. This will break meta tags, but not needed for GitHub.
+# Output markdown content $name if configured via the '$name' or '${name}-file' options
+# We assume UTF-8.
+# Outputting a header may break meta_tags, but these are not supported.
 sub _include_markdown {
     my ($self, $name) = @_;
 
@@ -63,6 +58,8 @@ sub _include_markdown {
     }
 }
 
+# Called when rendering an indented block. Detect if it's a code block and convert
+# to Github Flavored Markdown.
 sub _indent_verbatim {
     my ($self, $paragraph) = @_;
 
@@ -79,6 +76,11 @@ sub _indent_verbatim {
     return $paragraph;
 }
 
+# Called just before output. We carry out most operations here:
+#  - Skipping or inlining headings
+#  - Converting headings to title case
+#  - Codifying OPTIONS, METHODS etc.
+#  - Adding header and/or footer
 sub end_Document {
     my ($self) = @_;
 
@@ -155,13 +157,6 @@ sub _syntax {
     return ( $paragraph =~ /(\b(sub|my|use|shift)\b|\$self|\=\>|\$_|\@_)/ )
         ? 'perl'
         : '';
-}
-
-sub _trim {
-    my $str = shift;
-    $str =~ s/^\s*//;
-    $str =~ s/\s*$//;
-    return $str;
 }
 
 # Uses John Gruber's TitleCase.pl under MIT license.

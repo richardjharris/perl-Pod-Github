@@ -32,17 +32,18 @@ GetOptions(\%opts,
     'footer=s',
     'header-file=s',
     'footer-file=s',
-    'travis',
-    'coveralls',
     'title-case!',
     'syntax-highlight!',
     'shift-headings=i',
 ) or pod2usage(2);
 
-# One ARGV is assumed to be input (with output = STDOUT)
-my $in_fh  = get_handle(shift(@ARGV), '<', \*STDIN);
-my $out_fh = get_handle(shift(@ARGV), '>', \*STDOUT);
-@ARGV == 0 or pod2usage('Too many arguments');
+my $in_fh  = \*ARGV;
+my $out_fh = \*STDOUT;
+
+# Expand CSV options to hashes
+for my $key (qw(include exclude inline)) {
+    $opts{$key} = [ map { _trim($_) => 1 } split /,/ => ($opts{$key} || '') ];
+}
 
 my $parser = Pod::Github->new(%opts);
 $parser->output_fh($out_fh);
@@ -58,6 +59,13 @@ sub get_handle {
   };
 }
 
+sub _trim {
+    my $str = shift;
+    $str =~ s/^\s*//;
+    $str =~ s/\s*$//;
+    return $str;
+}
+
 __END__
 
 =pod
@@ -70,40 +78,28 @@ pod2github - Make pretty GitHub readmes from your POD
 
 =head1 SYNOPSIS
 
- $ pod2markdown < lib/Foo/Bar.pm > README.md
+ $ pod2github lib/Foo/Bar.pm > README.md
 
 =head1 DESCRIPTION
 
 This program converts your POD into Markdown, with GitHub-specific formatting
 of source code. Because your project's README.md probably diverges from your
-POD, C<pod2markdown> offers various other functions:
+POD, C<pod2github> offers various other functions:
 
 =over 4
 
 =item *
 
 Improve formatting: syntax-highlight Perl sections, and render command-line
-options, methods and functions as code.
+options, methods and functions as code. Title-case allcaps headers.
 
 =item *
 
-Hide the C<NAME> and C<SYNOPSIS> headers to simplify your POD's introduction
+Hide or inline arbitrary sections
 
 =item *
 
-Title-case the allcaps headers to make them friendlier
-
-=item *
-
-Optionally add Travis, Coveralls status
-
-=item *
-
-Optionally add custom Markdown to the beginning or end of the file
-
-=item *
-
-Exclude or inline arbitrary sections
+Optionally add a header or footer
 
 =back
 
@@ -111,7 +107,63 @@ Exclude or inline arbitrary sections
 
 =over
 
-=item 
+=item C<--exclude HEADER,HEADER...>
+
+Exclude one or more sections from the output. For this and below
+sections, header matching is case-sensitive and matches headers at
+any level.
+
+=item C<--include HEADER,HEADER...>
+
+Include I<only> the listed sections in the output.
+
+=item C<--inline HEADER,HEADER...>
+
+When these sections are encountered, remove the header but keep the
+section body. Useful to remove the 'Name' header from the top of
+your readme.
+
+=item C<--header header-string>, C<--header-file file>
+
+Output the specified header text or the contents of the specified file
+before outputting the converted input.
+
+=item C<--footer footer-string>, C<--footer-file file>
+
+Output the specified footer text or the contents of the specified file
+after outputting the converted input.
+
+=item C<--title-case>, C<--no-title-case> (default: on)
+
+Convert section headings to title case.
+
+=item C<--syntax-highlight>, C<--no-syntax-highlight> (default: on)
+
+Convert verbatim code blocks to Github Flavored Markdown blocks, with
+Perl syntax highlighting.
+
+=item C<--shift-headings OFFSET> (default: 1)
+
+Shift POD headings by I<offset> to yield a smaller Markdown heading.
+The default of 1 maps C<=head1> to a level-2 heading (i.e. C<##>)
+which is nicer than the overly large level-1 headings. Set to I<0>
+to disable.
+
+=item C<--help>
+
+Show this POD and exit.
+
+=item C<--man>, C<--perldoc>
+
+Show this POD in your C<man> pager, and exit.
+
+=item C<--version>
+
+Output version and exit.
+
+=item C<--usage>
+
+Output the synopsis section only and exit.
 
 =back
 
