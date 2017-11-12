@@ -1,0 +1,5 @@
+ - Add yaml support to load config from file
+ - Document above
+ - Add basic tests
+ - Add boilerplate tests (t/load etc.)
+ - Do MANIFEST and all the other crap via module-starter

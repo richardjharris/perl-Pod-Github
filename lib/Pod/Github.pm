@@ -227,3 +227,56 @@ sub _title_case {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+ Pod::Github - convert POD to Github markdown
+
+=head1 SYNOPSIS
+
+ my $parser = Pod::Github->new(%opts);
+ $parser->output_fh(\*STDOUT);
+ $parser->parse_file(\*ARGV);
+
+=head1 DESCRIPTION
+
+Subclass of C<Pod::Simple> that accepts POD and outputs Github Flavored
+Markdown (GFM). Optionally inlines or removes headings and/or prettifies
+the markdown to look better as a GitHub readme.
+
+=head1 METHODS
+
+=over
+
+=item new (%opts)
+
+Accepts the arguments in the same form as the binary C<bin/pod2github>
+(i.e. with dashes, not underscores). C<include>, C<exclude> and C<inline>
+should be arrayrefs of section names rather than a CSV string.
+
+=item output_fh (fh)
+
+Set the filehandle for Markdown output.
+
+=item output_string (stringref)
+
+Sets the string that $parser's output will be sent to, instead of a
+filehandle.
+
+=item parse_file (fh)
+
+Read POD from the given filehandle and output Markdown to C<output_fh>.
+
+=item parse_string_document (string)
+
+Works like C<parse_file> except it reads the POD from a string already
+in memory.
+
+=item parse_lines (list)
+
+Works like C<parse_file> except it reads the POD from a list of strings,
+each containing exactly one line of content.
+
+=back
