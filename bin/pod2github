@@ -8,6 +8,7 @@ use warnings;
 use Pod::Github;
 use Getopt::Long;
 use Pod::Usage;
+use YAML::XS;
 
 my %command_opts = (
     'help|h'        => sub { pod2usage(1) },
@@ -26,6 +27,8 @@ my %opts = (
 Getopt::Long::Configure(qw(bundling no_auto_abbrev));
 GetOptions(\%opts,
     %command_opts,
+    'input=s',
+    'output=s',
     'exclude=s',
     'inline=s',
     'header=s',
@@ -35,10 +38,24 @@ GetOptions(\%opts,
     'title-case!',
     'syntax-highlight!',
     'shift-headings=i',
+    'config-file=s',
 ) or pod2usage(2);
 
-my $in_fh  = \*ARGV;
-my $out_fh = \*STDOUT;
+if (defined $opts{'config-file'}) {
+    load_config($opts{'config-file'}, \%opts);
+}
+else {
+    my @default_configs = map { (".$_", $_) } map { ("$_.yaml", "$_.yml") } ('pod2github'); 
+    for my $file (@default_configs) {
+        if (-f $file) {
+            load_config($file, \%opts);
+            last;
+        }
+    }
+}
+
+my $in_fh  = get_handle($opts{input}, '<', \*ARGV);
+my $out_fh = get_handle($opts{output}, '>', \*STDOUT);
 
 # Expand CSV options to hashes
 for my $key (qw(include exclude inline)) {
@@ -57,6 +74,18 @@ sub get_handle {
       or die "Failed to open '$path': $!\n";
     $fh;
   };
+}
+
+sub load_config {
+    my ($filename, $config) = @_;
+
+    my $user_config = YAML::XS::LoadFile($filename);
+    ref $user_config eq 'HASH' or pod2usage "Config '$filename' must be a dictionary";
+
+    while (my ($key, $value) = each %$user_config) {
+        $key =~ tr/_/-/;
+        $config->{$key} = $value;
+    }
 }
 
 sub _trim {
@@ -149,6 +178,18 @@ The default of 1 maps C<=head1> to a level-2 heading (i.e. C<##>)
 which is nicer than the overly large level-1 headings. Set to I<0>
 to disable.
 
+=item C<--input FILENAME>
+
+Set input filename, instead of STDIN/command line argument.
+
+=item C<--output FILENAME>
+
+Set output filename, instead of STDOUT.
+
+=item C<--config-file FILENAME>
+
+Load configuration from C<FILENAME> (see below)
+
 =item C<--help>
 
 Show this POD and exit.
@@ -166,6 +207,22 @@ Output version and exit.
 Output the synopsis section only and exit.
 
 =back
+
+=head1 YAML CONFIGURATION
+
+Instead of passing command line arguments, configuration can be loaded
+from a file named C<pod2gitub.yaml> (or .yml; optionally preceded with
+a single dot). Or from any other file via the C<--config-file> option.
+
+The YAML document should contain a top-level dictionary mapping keys
+to values. Keys may use either underscores or dashes. For binary options,
+use a value of 0/1.
+
+An example configuration:
+
+ input: lib/Pod/Github.pm
+ output: README.md
+ inline: NAME
 
 =head1 AUTHOR
 
