@@ -39,17 +39,20 @@ GetOptions(\%opts,
     'syntax-highlight!',
     'shift-headings=i',
     'config-file=s',
+    'no-config',
 ) or pod2usage(2);
 
-if (defined $opts{'config-file'}) {
-    load_config($opts{'config-file'}, \%opts);
-}
-else {
-    my @default_configs = map { (".$_", $_) } map { ("$_.yaml", "$_.yml") } ('pod2github'); 
-    for my $file (@default_configs) {
-        if (-f $file) {
-            load_config($file, \%opts);
-            last;
+unless ($opts{'no-config'}) {
+    if (defined $opts{'config-file'}) {
+        load_config($opts{'config-file'}, \%opts);
+    }
+    else {
+        my @default_configs = map { (".$_", $_) } map { ("$_.yaml", "$_.yml") } ('pod2github'); 
+        for my $file (@default_configs) {
+            if (-f $file) {
+                load_config($file, \%opts);
+                last;
+            }
         }
     }
 }
