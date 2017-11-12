@@ -7,7 +7,6 @@ WriteMakefile(
     NAME             => 'Pod::Github',
     AUTHOR           => q{Richard Harris <richardjharris@gmail.com>},
     VERSION_FROM     => 'lib/Pod/Github.pm',
-    ABSTRACT_FROM    => 'lib/Pod/Github.pm',
     LICENSE          => 'artistic_2',
     PL_FILES         => {},
     MIN_PERL_VERSION => '5.006',
