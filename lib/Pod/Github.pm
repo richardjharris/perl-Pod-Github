@@ -6,7 +6,7 @@ use Encode;
 use File::Slurp qw(read_file);
 use parent 'Pod::Markdown';
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 my $DATA_KEY = '_Pod_Github_';
 

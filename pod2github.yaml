@@ -1,3 +1,3 @@
-input: lib/Pod/Github.pm
+input: bin/pod2github
 output: README.md
 inline: NAME
