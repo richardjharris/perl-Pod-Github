@@ -1,5 +1,7 @@
 Revision history for Pod::Github
 
+        Switch from File::Slurp to Path::Tiny
+
 0.03    13 Nov 2017
         Added EXE_FILES to Makefile.PL; update README
 
