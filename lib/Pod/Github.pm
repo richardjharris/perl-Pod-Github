@@ -6,7 +6,7 @@ use Encode;
 use Path::Tiny;
 use parent 'Pod::Markdown';
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 my $DATA_KEY = '_Pod_Github_';
 
